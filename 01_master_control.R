@@ -3,12 +3,12 @@
 ################################################################################
 
 #Set the working directory
-wd <- "C:/Users/alex.melton/Documents/Side Projects/Oscar Model"
+wd <- 'C:/Users/alex.melton/Desktop/Oscar Model/academy-award-prediction-model'
 setwd(wd)
 
 #Loading in packages
 pkgs <- c("htmltab", "jsonlite", "rvest", "XML", "RCurl", "stringr", "randomForest",
-          "plyr", "dplyr", "xml2", 'lubridate')
+          "plyr", "dplyr", "xml2", 'lubridate', "rlist")
 ._ <- sapply(pkgs, library, character.only = TRUE, quietly = TRUE)
 
 #Sourcing other files for the model 

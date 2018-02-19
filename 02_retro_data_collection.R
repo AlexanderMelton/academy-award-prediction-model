@@ -4,17 +4,35 @@
 
 ################### Generates Film name, year, and win/lose#####################
 
-generator1 <- function(i){
-  tmp <- htmltab("https://en.wikipedia.org/wiki/Academy_Award_for_Best_Picture",i)
-  tmp <- tmp %>% select(Film) %>% rename(film = Film)
-  tmp$year = 1990 + i - 65
-  tmp$winner <- 0
-  tmp$winner[1] <- 1 
-  tmp
+url <- getURL("https://en.wikipedia.org/wiki/Academy_Award_for_Best_Picture",.opts = list(ssl.verifypeer = FALSE))
+tables <- readHTMLTable(url)
+tables <- list.clean(tables, fun = is.null, recursive = FALSE)
+df <- ldply(tables, data.frame)
+df[] <- lapply(df, as.character)
+df$V1 <- ifelse(is.na(df$V1), as.character(df$Year), as.character(df$V1))
+
+out <- as.character(df$V1)
+
+generator_1 <- function(i, vector){
+  if(as.numeric(substr(out[[i]],1,4)) %in% c(1990:2016)){
+    year <- as.numeric(substr(out[[i]],1,4))
+    stop_index <- grep((year + 1), out)
+    films <- out[(i+1):(stop_index-1)]
+    out <- data.frame(film = films)
+    out$year <- year
+    out$winner <- 0
+    out$winner[1] <- 1 
+    out
+  }
 }
 
-master <- ldply(65:90, generator1)
+master <- ldply(1:grep("2017", out), generator_1, out)
 master$film <- gsub("Les MisÃ©rables", "Les Misérables", master$film)
+master$film <- gsub("The Postman.*","Il Postino: The Postman", master$film)
+films_1 <- master$film
+
+rm(df, tables, out, url)
+
 ################### Generates number of total nominations ######################  
 
 generator2 <- function(i){
@@ -40,13 +58,15 @@ generator2 <- function(i){
      else{
        tmp = tmp_2
      }
-  tmp %>%
+  tmp <- tmp %>%
     rename(nominations = Nominations,
            film = Film) %>%
-    mutate(year = 1990 + i - 63)
+    mutate(year = 1990 + i - 63) %>%
+    select(film, year, nominations)
+  return(tmp)
 }
 
-master <- merge(master, ldply(63:88, generator2))
+master <- merge(master, ldply(63:89, generator2))
 
 ##################### Generating Wikipedia Links ###############################
 
@@ -72,10 +92,12 @@ links_df <- subset(links_df, !(duplicated(links_df$film)))
 
 master <- join(master, links_df, by = 'film')
 master$link <- ifelse(master$film == "Les Misérables", 'https://en.wikipedia.org/wiki/Les_Mis%C3%A9rables_(2012_film)', master$link)
+master$link <- ifelse(master$film == "Precious: Based on the Novel 'Push' by Sapphire", 'https://en.wikipedia.org/wiki/Precious_(film)', master$link)
 rm(links_df, url, pg, links)
 ########################### Getting Length of Films ############################
 
 getLength <- function(link){
+  print(link)
   link <- read_html(link)
   page <- link %>%
     html_node(".vevent") %>%
@@ -127,8 +149,8 @@ getBudget <- function(link){
           return("FIX")
         }
       }
-      }
     }
+  }
 }
 
 master$budget <- lapply(master$link, getBudget)
@@ -164,7 +186,7 @@ director_guild <- director_guild %>%
 
 master <- left_join(master, director_guild) %>%
             mutate_each(funs(replace(., which(is.na(.)), 0)))
-master$df_nom <- ifelse(master$film == "Les Misérables", 1, master$director_nom)
+master$df_nom <- ifelse(master$film == "Les Misérables", 1, master$dg_nom)
 rm(director_guild)
 
 ################## Nomination for Best Original Screenplay #####################
@@ -178,9 +200,9 @@ rm(screenplay_noms)
 
 page <- read_html('https://en.wikipedia.org/wiki/Academy_Award_for_Best_Visual_Effects')
 tables <- html_nodes(page, "table")
-visual_effects <- rbind(as.data.frame(html_table(tables[5], fill = TRUE)),
-                        as.data.frame(html_table(tables[6], fill = TRUE)),
-                        as.data.frame(html_table(tables[7], fill = TRUE)))
+visual_effects <- rbind(as.data.frame(html_table(tables[10], fill = TRUE)),
+                        as.data.frame(html_table(tables[11], fill = TRUE)),
+                        as.data.frame(html_table(tables[12], fill = TRUE)))
 master$visual_effects_nom <- ifelse(master$film %in% visual_effects$Film, 1,0)
 
 ###################### Nomination for Best Director ############################
@@ -214,8 +236,8 @@ getRT <- function(link){
 master$rt_score <- as.numeric(lapply(master$link, getRT))/100
 
 missing = c("American Beauty", "Finding Neverland", "Sense and Sensibility",
-            "The Prince of Tides")
-missing_rt = c(0.88, 0.83, 0.98, 0.73)
+            "The Prince of Tides", "Braveheart")
+missing_rt = c(0.88, 0.83, 0.98, 0.73, 0.77)
 
 for(i in 1:length(missing)){
   master$rt_score <- ifelse(master$film == missing[i], missing_rt[i], master$rt_score)

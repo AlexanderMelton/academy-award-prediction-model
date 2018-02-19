@@ -3,9 +3,16 @@
 ################################################################################
 predictionModel <- function(df_train, df_test){
   set.seed(05251929) #Date of First Academy Awards
-  tree_model <- randomForest(winner ~ nominations + length + adj_budget +
-                               dg_nom + dg_win + rt_score + screenplay_nom 
-                               + visual_effects_nom + foreign,  data = df_train,
+  tree_model <- randomForest(winner ~ nominations + 
+                               length + 
+                               adj_budget +
+                               dg_nom + 
+                               dg_win + 
+                               rt_score + 
+                               screenplay_nom +
+                               visual_effects_nom +
+                               foreign
+                             ,  data = df_train,
                              ntree = 50000)
   df_test$prob <- predict(tree_model, df_test)
   df_test$sims <- ifelse(df_test$pro < 0.01, 1, ceiling(df_test$pro*100))
@@ -19,11 +26,12 @@ predictionModel <- function(df_train, df_test){
   tmp
 }
 
-predictionModel(master[which(master$year != 2013),], master[which(master$year == 2013),])
+predictionModel(master[master$year != 2009,], master[master$year == 2009,])
 
 model <- lm(winner ~ nominations + length + adj_budget +
               dg_nom + dg_win + rt_score + screenplay_nom 
-            + visual_effects_nom + foreign,  data = master[which(master$year != 2013),])
-test <- 
-predict(model, master[which(master$year == 2013),])
+            + visual_effects_nom + foreign,  data = master[which(master$year != 2016),])
+predict(model, master[master$year == 2016,])
+
+cor(master[,c('winner','adj_budget','rt_score')])
 

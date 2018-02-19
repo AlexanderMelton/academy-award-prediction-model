@@ -2,9 +2,26 @@
 ###            05_current_data_collection - Oscar Prediction Model           ###
 ################################################################################
 
-current_year <- generator1(91) %>% select(film, year)
+url <- getURL("https://en.wikipedia.org/wiki/Academy_Award_for_Best_Picture",.opts = list(ssl.verifypeer = FALSE))
+tables <- readHTMLTable(url)
+tables <- list.clean(tables, fun = is.null, recursive = FALSE)
+df <- ldply(tables, data.frame)
+df[] <- lapply(df, as.character)
+df$V1 <- ifelse(is.na(df$V1), as.character(df$Year), as.character(df$V1))
 
-current_year <- merge(current_year, generator2(89))
+out <- as.character(df$V1)
+
+generator_3 <- function(i, vector, stop_index){
+    year <- as.numeric(substr(out[[i]],1,4))
+    films <- out[(i+1):(stop_index-1)]
+    out <- data.frame(film = films)
+    out$year <- year
+    out
+}
+
+current_year <- generator_3(633,out, 642)
+
+current_year <- merge(current_year, generator2(90))
 
 url <- "https://en.wikipedia.org/wiki/Academy_Award_for_Best_Picture"
 pg <- read_html(url)
@@ -49,7 +66,7 @@ director_guild <- director_guild %>%
 
 current_year <- left_join(current_year, director_guild) %>%
   mutate_each(funs(replace(., which(is.na(.)), 0)))
-current_year$dg_win <- ifelse(current_year$film == "La La Land", 1, 0)
+current_year$dg_win <- ifelse(current_year$film == "The Shape of Water", 1, 0)
 rm(director_guild)
 
 screenplay_noms <- htmltab('https://en.wikipedia.org/wiki/Academy_Award_for_Best_Original_Screenplay',3) %>%
@@ -59,12 +76,12 @@ rm(screenplay_noms)
 
 page <- read_html('https://en.wikipedia.org/wiki/Academy_Award_for_Best_Visual_Effects')
 tables <- html_nodes(page, "table")
-visual_effects <- rbind(as.data.frame(html_table(tables[5], fill = TRUE)),
-                        as.data.frame(html_table(tables[6], fill = TRUE)),
-                        as.data.frame(html_table(tables[7], fill = TRUE)))
+visual_effects <- rbind(as.data.frame(html_table(tables[10], fill = TRUE)),
+                        as.data.frame(html_table(tables[11], fill = TRUE)),
+                        as.data.frame(html_table(tables[12], fill = TRUE)))
 current_year$visual_effects_nom <- ifelse(current_year$film %in% visual_effects$Film, 1,0)
 
-director_noms <- htmltab('https://en.wikipedia.org/wiki/Academy_Award_for_Best_Director',3) %>%
+director_noms <- htmltab('https://en.wikipedia.org/wiki/Academy_Award_for_Best_Director',12) %>%
   select(Film) %>% rename(film = Film)
 current_year$director_nom <- ifelse(current_year$film %in% director_noms$film, 1,0)
 rm(director_noms)
