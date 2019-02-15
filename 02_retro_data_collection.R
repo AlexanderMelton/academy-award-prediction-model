@@ -5,6 +5,7 @@
 ################### Generates Film name, year, and win/lose#####################
 
 generator1 <- function(i){
+  browser()
   tmp <- htmltab("https://en.wikipedia.org/wiki/Academy_Award_for_Best_Picture",i)
   tmp <- tmp %>% select(Film) %>% rename(film = Film)
   tmp$year = 1990 + i - 65
@@ -14,7 +15,10 @@ generator1 <- function(i){
 }
 
 master <- ldply(65:90, generator1)
-master$film <- gsub("Les MisÃ©rables", "Les Misérables", master$film)
+master$film <- gsub("Les MisÃ©rables", "Les Mis?rables", master$film)
+
+tmp <- read_html('https://en.wikipedia.org/wiki/Academy_Award_for_Best_Picture') %>% html_nodes('table.wikitable')
+html_table(tmp[3], fill = TRUE)
 ################### Generates number of total nominations ######################  
 
 generator2 <- function(i){
@@ -63,7 +67,7 @@ links_df$film <- gsub("[0-9]{4} film", "", links_df$film)
 links_df$film <- gsub("()", "", links_df$film, fixed = TRUE)
 links_df$film <- gsub("%27", "'", links_df$film, fixed = TRUE)
 links_df$film <- gsub("%26", "&", links_df$film, fixed = TRUE)
-links_df$film <- gsub("Les Mis%C3%A9rables", "Les Misérables", links_df$film, fixed = TRUE)
+links_df$film <- gsub("Les Mis%C3%A9rables", "Les Mis?rables", links_df$film, fixed = TRUE)
 links_df$film <- gsub("Birdman", "Birdman or (The Unexpected Virtue of Ignorance)", links_df$film, fixed = TRUE)
 links_df$film <- gsub("Loud and", "Loud &", links_df$film, fixed = TRUE)
 links_df$film <- trimws(links_df$film)
@@ -71,7 +75,7 @@ links_df <- subset(links_df, film %in% master$film)
 links_df <- subset(links_df, !(duplicated(links_df$film)))
 
 master <- join(master, links_df, by = 'film')
-master$link <- ifelse(master$film == "Les Misérables", 'https://en.wikipedia.org/wiki/Les_Mis%C3%A9rables_(2012_film)', master$link)
+master$link <- ifelse(master$film == "Les Mis?rables", 'https://en.wikipedia.org/wiki/Les_Mis%C3%A9rables_(2012_film)', master$link)
 rm(links_df, url, pg, links)
 ########################### Getting Length of Films ############################
 
@@ -164,7 +168,7 @@ director_guild <- director_guild %>%
 
 master <- left_join(master, director_guild) %>%
             mutate_each(funs(replace(., which(is.na(.)), 0)))
-master$df_nom <- ifelse(master$film == "Les Misérables", 1, master$director_nom)
+master$df_nom <- ifelse(master$film == "Les Mis?rables", 1, master$director_nom)
 rm(director_guild)
 
 ################## Nomination for Best Original Screenplay #####################

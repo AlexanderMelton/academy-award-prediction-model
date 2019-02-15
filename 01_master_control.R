@@ -3,8 +3,8 @@
 ################################################################################
 
 #Set the working directory
-wd <- "C:/Users/alex.melton/Documents/Side Projects/Oscar Model"
-setwd(wd)
+#wd <- "C:/Users/alex.melton/Documents/Side Projects/Oscar Model"
+#setwd(wd)
 
 #Loading in packages
 pkgs <- c("htmltab", "jsonlite", "rvest", "XML", "RCurl", "stringr", "randomForest",
